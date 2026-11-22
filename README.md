@@ -18,7 +18,7 @@ It's plain HTML, CSS, and JavaScript with no build step and no server.
 ### Presentation mode
 - Layouts: all problems on one slide, or one problem per slide.
 - Text automatically resizes to fill the screen.
-- Keys: `←` / `→` move between slides, `A` shows or hides answers, `T` starts or pauses the timer, `F` toggles full screen, `Esc` exits.
+- Keys: `←` / `→` move between slides, `A` shows or hides answers, `D` reveals hidden diagrams as a hint, `T` starts or pauses the timer, `F` toggles full screen, `Esc` exits.
 
 ### Printing
 - Work space under each problem: none, small, medium, or large.
@@ -52,7 +52,14 @@ Answers list accepted equivalent forms, for example `2w + 3` or `3 + 2w`.
 | Sides as expressions: quadratic | legs x and x + 7 with hypotenuse 13; "2 more than twice the shorter leg"; rectangle and TV diagonals |
 | Real-world word problems | ladders, TVs, ramps, kites, ball diamonds; some rounded to the nearest tenth |
 
-You can turn off **Show labeled diagrams** so students have to translate the words into their own sketch.
+**Triangle diagrams** (to help students move toward drawing their own):
+- Choose **Show on every problem**, **Show on every other problem**, or **None — students draw & label their own**.
+  You can switch after building and the problems stay the same. Only how each one is shown changes.
+- Each Pythagorean problem in the preview has a **△ Diagram on/off** button to control it one at a time.
+- Without a diagram, a problem is written out in words and tells students to *draw and label a diagram*.
+  With one, it shows a labeled triangle (or rectangle). Word problems can have diagrams too.
+- During a slideshow, press **D** (or click **Diagrams**) to briefly show the hidden diagrams as a hint, then press it again to hide them.
+
 The answer key shows the equation and the solution steps.
 
 ## Avoiding repeats

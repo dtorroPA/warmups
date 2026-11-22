@@ -119,34 +119,39 @@ window.WU = window.WU || {};
   const tri = (a, b, la, lb, lc) => ({ kind: 'tri', a, b, la, lb, lc, orient: orient() });
   const units = () => pick([['', ''], ['', ''], [' cm', ' cm'], [' in.', ' inches'], [' ft', ' feet'], [' m', ' meters']]);
 
+  // Every problem carries two versions so diagrams can be switched on/off later
+  // without changing the numbers:
+  //   dgText / dgPrompt + diagram   – shown when the diagram is on
+  //   text / prompt                 – words only; students draw their own triangle
+  const DRAW = 'Draw and label a diagram.';
   function finish(p, type, label) {
     p.topic = 'pyth';
     p.level = type;
     p.label = 'Pythagorean Theorem · ' + label;
     p.alts = p.alts || [];
+    if (p.dgText == null) p.dgText = p.text;
+    if (p.dgPrompt == null) p.dgPrompt = p.prompt;
+    p.showDg = !!p.diagram;
     return p;
   }
+  const join = (...parts) => parts.filter(Boolean).join(' ');
 
   // ---------------------------------------------------------------------------
   // Whole-number answers
   // ---------------------------------------------------------------------------
-  function whole(opts) {
+  function whole() {
     const [p, q, c] = chance(0.8) ? pick(T65) : pick(T100);
     const [a, b] = chance(0.5) ? [p, q] : [q, p];
     const findHyp = chance(0.5);
     const [us, ul] = units();
-    let text, diagram = null;
-    if (opts.diagrams) {
-      diagram = findHyp ? tri(a, b, a + us, b + us, X) : tri(a, b, a + us, X, c + us);
-      text = `Find the value of ${X}.`;
-    } else if (findHyp) {
-      text = `A right triangle has legs of length ${a}${ul} and ${b}${ul}. Find the length of the hypotenuse.`;
-    } else {
-      text = `A right triangle has a hypotenuse of length ${c}${ul} and one leg of length ${a}${ul}. Find the length of the other leg.`;
-    }
+    const diagram = findHyp ? tri(a, b, a + us, b + us, X) : tri(a, b, a + us, X, c + us);
+    const text = findHyp
+      ? `A right triangle has legs of length ${a}${ul} and ${b}${ul}. Find the length of the hypotenuse.`
+      : `A right triangle has a hypotenuse of length ${c}${ul} and one leg of length ${a}${ul}. Find the length of the other leg.`;
     const work = findHyp ? `${sup2(a)} + ${sup2(b)} = ${sup2(X)} → ${X}<sup>2</sup> = ${a * a + b * b}` : `${sup2(a)} + ${sup2(X)} = ${sup2(c)} → ${X}<sup>2</sup> = ${c * c - a * a}`;
     return finish({
-      text, prompt: '', diagram,
+      dgText: `Find the value of ${X}.`, dgPrompt: '', diagram,
+      text, prompt: DRAW,
       answer: `${findHyp ? c : b}${ul}`, work,
       key: `P|whole|${a},${b},${c}|${findHyp}`, tkey: `P|whole|${findHyp}`,
     }, 'whole', 'Whole-Number Answers');
@@ -155,7 +160,7 @@ window.WU = window.WU || {};
   // ---------------------------------------------------------------------------
   // Radical answers
   // ---------------------------------------------------------------------------
-  function radAns(opts) {
+  function radAns() {
     const findHyp = chance(0.5);
     const wantSimplify = chance(0.7);
     let a, b, c, n;
@@ -165,18 +170,20 @@ window.WU = window.WU || {};
       if (isSquare(n)) continue;
       if (wantSimplify === (simplifyRoot(n).k > 1)) break;
     }
-    let text, diagram = null;
+    let text, diagram;
     if (findHyp) {
-      if (opts.diagrams) { diagram = tri(a, b, a, b, X); text = `Find the value of ${X}.`; }
-      else text = `A right triangle has legs of length ${a} and ${b}. Find the length of the hypotenuse.`;
+      diagram = tri(a, b, a, b, X);
+      text = `A right triangle has legs of length ${a} and ${b}. Find the length of the hypotenuse.`;
     } else {
       b = Math.sqrt(n);
-      if (opts.diagrams) { diagram = tri(a, b, a, X, c); text = `Find the value of ${X}.`; }
-      else text = `A right triangle has a hypotenuse of length ${c} and a leg of length ${a}. Find the length of the other leg.`;
+      diagram = tri(a, b, a, X, c);
+      text = `A right triangle has a hypotenuse of length ${c} and a leg of length ${a}. Find the length of the other leg.`;
     }
+    const ask = 'Give your answer in simplest radical form.';
     const work = findHyp ? `${sup2(a)} + ${sup2(b)} = ${sup2(X)} → ${X} = ${WU.rad(n)}` : `${sup2(a)} + ${sup2(X)} = ${sup2(c)} → ${X} = ${WU.rad(n)}`;
     return finish({
-      text, prompt: 'Give your answer in simplest radical form.', diagram,
+      dgText: `Find the value of ${X}.`, dgPrompt: ask, diagram,
+      text, prompt: join(DRAW, ask),
       answer: sqrtHTML(n), alts: [`≈ ${approx(Math.sqrt(n))}`], work,
       key: `P|radAns|${findHyp ? a + ',' + b : c + ',' + a}|${findHyp}`, tkey: `P|radAns|${findHyp}`,
     }, 'radAns', 'Radical Answers');
@@ -187,9 +194,9 @@ window.WU = window.WU || {};
   // ---------------------------------------------------------------------------
   const SQF = [2, 3, 5, 6, 7, 10, 11];
   const SQF_WIDE = [2, 3, 5, 6, 7, 10, 11, 13, 14, 15, 17, 19, 21, 22, 23];
-  function radGiven(opts) {
+  function radGiven() {
     const mode = pick(['twoRoots', 'kRootInt', 'hypKRoot', 'iso', 'hypRoots', 'twoKRoots']);
-    let s1, s2, s3, n, findHyp = true, g1, g2; // sq-values; display strings g1, g2
+    let s1, s2, s3, n, findHyp = true, g1, g2; // squared values; display strings g1, g2
     for (let tries = 0; tries < 200; tries++) {
       if (mode === 'twoRoots') {
         const p = pick(SQF_WIDE), q = pick(SQF_WIDE);
@@ -217,22 +224,23 @@ window.WU = window.WU || {};
       }
       break;
     }
-    let text, diagram = null;
-    const shapeA = Math.sqrt(findHyp ? s1 : s1);
+    let text, diagram;
+    const shapeA = Math.sqrt(s1);
     if (findHyp) {
-      const shapeB = Math.sqrt(s2);
-      if (opts.diagrams) { diagram = tri(shapeA, shapeB, g1, g2, X); text = `Find the value of ${X}.`; }
-      else if (mode === 'iso') text = `An isosceles right triangle has legs that are each ${g1} units long. Find the length of the hypotenuse.`;
-      else text = `A right triangle has legs of length ${g1} and ${g2}. Find the length of the hypotenuse.`;
+      diagram = tri(shapeA, Math.sqrt(s2), g1, g2, X);
+      text = mode === 'iso'
+        ? `An isosceles right triangle has legs that are each ${g1} units long. Find the length of the hypotenuse.`
+        : `A right triangle has legs of length ${g1} and ${g2}. Find the length of the hypotenuse.`;
     } else {
-      const shapeB = Math.sqrt(n);
-      if (opts.diagrams) { diagram = tri(shapeA, shapeB, g2, X, g1); text = `Find the value of ${X}.`; }
-      else text = `A right triangle has a hypotenuse of length ${g1} and one leg of length ${g2}. Find the length of the other leg.`;
+      diagram = tri(shapeA, Math.sqrt(n), g2, X, g1);
+      text = `A right triangle has a hypotenuse of length ${g1} and one leg of length ${g2}. Find the length of the other leg.`;
     }
+    const ask = 'Give your answer in simplest form.';
     const work = findHyp ? `(${g1})<sup>2</sup> + (${g2})<sup>2</sup> = ${sup2(X)} → ${s1} + ${s2} = ${sup2(X)}`
       : `(${g2})<sup>2</sup> + ${sup2(X)} = (${g1})<sup>2</sup> → ${s1} + ${sup2(X)} = ${s3}`;
     return finish({
-      text, prompt: 'Give your answer in simplest form.', diagram,
+      dgText: `Find the value of ${X}.`, dgPrompt: ask, diagram,
+      text, prompt: join(DRAW, ask),
       answer: sqrtHTML(n), alts: isSquare(n) ? [] : [`≈ ${approx(Math.sqrt(n))}`], work,
       key: `P|radGiven|${mode}|${s1},${s2},${s3}`, tkey: `P|radGiven|${mode}`,
     }, 'radGiven', 'Radicals in the Given');
@@ -251,12 +259,13 @@ window.WU = window.WU || {};
     const [l1, l2, h] = c.sides;
     return `${X} = ${c.x}; legs ${Math.min(l1, l2)} and ${Math.max(l1, l2)}, hypotenuse ${h}`;
   }
-  function algLin(opts) {
+  const SOLVE = 'Write an equation and solve.';
+  function algLin() {
     const c = pick(LIN);
     const [known, , hyp] = c.sides;
     const d = c.h.d;
     const style = pick(['plain', 'plain', 'ladder', 'kite', 'gate']);
-    let text, diagram = null;
+    let text;
     if (style === 'ladder') {
       text = `The bottom of a ladder is ${known} ft from a wall. The ladder is ${d} ft longer than the height it reaches up the wall. How high up the wall does the ladder reach, and how long is the ladder?`;
     } else if (style === 'kite') {
@@ -266,22 +275,22 @@ window.WU = window.WU || {};
     } else {
       text = `One leg of a right triangle is ${known} units long. The hypotenuse is ${d} unit${d > 1 ? 's' : ''} longer than the other leg. Find the length of the other leg and the hypotenuse.`;
     }
-    if (opts.diagrams) {
-      diagram = style === 'gate'
-        ? { kind: 'rect', w: known, h: c.x, lw: String(known), lh: X, ld: lin(1, d) }
-        : tri(known, c.x, String(known), X, lin(1, d));
-    }
+    const diagram = style === 'gate'
+      ? { kind: 'rect', w: known, h: c.x, lw: String(known), lh: X, ld: lin(1, d) }
+      : tri(known, c.x, String(known), X, lin(1, d));
+    const hypName = style === 'ladder' ? 'ladder' : style === 'kite' ? 'string' : 'brace';
     return finish({
-      text, prompt: opts.diagrams ? 'Write an equation and solve.' : `Let ${X} be the unknown leg. Write an equation and solve.`, diagram,
-      answer: style === 'plain' ? solutionText(c) : `${X} = ${c.x}; ${style === 'gate' ? 'height' : style === 'kite' ? 'height' : 'height'} ${c.x}, ${style === 'ladder' ? 'ladder' : style === 'kite' ? 'string' : 'brace'} ${hyp}`,
+      text, prompt: join(DRAW, `Let ${X} be the unknown ${style === 'plain' ? 'leg' : 'height'}.`, SOLVE),
+      dgPrompt: SOLVE, diagram,
+      answer: style === 'plain' ? solutionText(c) : `${X} = ${c.x}; height ${c.x}, ${hypName} ${hyp}`,
       work: workFor(c.l1, c.l2, c.h, c.x),
       key: `P|algLin|${c.sides.join(',')}|${style}`, tkey: `P|algLin|${style}`,
     }, 'algLin', 'Expressions (Linear)');
   }
 
-  function algQuad(opts) {
+  function algQuad() {
     const c = pick(QUAD);
-    let text, diagram = null;
+    let text, diagram;
     const [s1, s2, s3] = c.sides;
     if (c.kind === 'legsDiff') {
       const style = pick(['plain', 'rect', 'tv', 'garden']);
@@ -290,11 +299,10 @@ window.WU = window.WU || {};
       else if (style === 'tv') text = `A TV screen is ${d} inches wider than it is tall. The diagonal of the screen is ${s3} inches. Find the width and height of the screen.`;
       else if (style === 'garden') text = `A rectangular garden is ${d} feet longer than it is wide. A straight path cuts diagonally across the garden and is ${s3} feet long. Find the dimensions of the garden.`;
       else text = `One leg of a right triangle is ${d} more than the other leg. The hypotenuse is ${s3}. Find the lengths of the legs.`;
-      if (opts.diagrams) {
-        diagram = style === 'plain' ? tri(s2, s1, lin(1, d), X, String(s3)) : { kind: 'rect', w: s2, h: s1, lw: lin(1, d), lh: X, ld: String(s3) };
-      }
+      diagram = style === 'plain' ? tri(s2, s1, lin(1, d), X, String(s3)) : { kind: 'rect', w: s2, h: s1, lw: lin(1, d), lh: X, ld: String(s3) };
+      const v = style === 'plain' ? 'the shorter leg' : style === 'tv' ? 'the height' : 'the width';
       return finish({
-        text, prompt: 'Write an equation and solve.', diagram,
+        text, prompt: join(DRAW, `Let ${X} be ${v}.`, SOLVE), dgPrompt: SOLVE, diagram,
         answer: style === 'plain' ? solutionText(c) : `${X} = ${s1}; ${style === 'tv' ? 'height' : 'width'} ${s1}, ${style === 'tv' ? 'width' : 'length'} ${s2}`,
         work: workFor(c.l1, c.l2, c.h, c.x),
         key: `P|algQuad|${c.kind}|${c.sides.join(',')}|${style}`, tkey: `P|algQuad|${c.kind}`,
@@ -302,16 +310,17 @@ window.WU = window.WU || {};
     }
     if (c.kind === 'legMult') {
       text = `The longer leg of a right triangle is ${rel(c.l2, 'the shorter leg')}. The hypotenuse is ${s3}. Find the lengths of the legs.`;
-      if (opts.diagrams) diagram = tri(s2, s1, lin(c.l2.k, c.l2.d), X, String(s3));
+      diagram = tri(s2, s1, lin(c.l2.k, c.l2.d), X, String(s3));
     } else if (c.kind === 'hypMult') {
       text = `One leg of a right triangle is ${s1}. The hypotenuse is ${rel(c.h, 'the other leg')}. Find the length of the other leg and the hypotenuse.`;
-      if (opts.diagrams) diagram = tri(s1, s2, String(s1), X, lin(c.h.k, c.h.d));
+      diagram = tri(s1, s2, String(s1), X, lin(c.h.k, c.h.d));
     } else {
       text = `The longer leg of a right triangle is ${rel(c.l2, 'the shorter leg')}, and the hypotenuse is ${rel(c.h, 'the shorter leg')}. Find all three side lengths.`;
-      if (opts.diagrams) diagram = tri(s2, s1, lin(1, c.l2.d), X, lin(1, c.h.d));
+      diagram = tri(s2, s1, lin(1, c.l2.d), X, lin(1, c.h.d));
     }
+    const v = c.kind === 'hypMult' ? 'the other leg' : 'the shorter leg';
     return finish({
-      text, prompt: opts.diagrams ? 'Write an equation and solve.' : `Let ${X} be the shorter leg. Write an equation and solve.`, diagram,
+      text, prompt: join(DRAW, `Let ${X} be ${v}.`, SOLVE), dgPrompt: SOLVE, diagram,
       answer: solutionText(c), work: workFor(c.l1, c.l2, c.h, c.x),
       key: `P|algQuad|${c.kind}|${c.sides.join(',')}`, tkey: `P|algQuad|${c.kind}`,
     }, 'algQuad', 'Expressions (Quadratic)');
@@ -319,26 +328,28 @@ window.WU = window.WU || {};
 
   // ---------------------------------------------------------------------------
   // Word problems. find: 'c' (hypotenuse) or 'b' (leg). a, b legs; c hypotenuse.
+  // wide: the text calls the longer leg the horizontal one (width, run, length).
   // ---------------------------------------------------------------------------
   const WORD = [
     { id: 'ladderH', find: 'b', r: [10, 30], u: 'feet', t: (a, b, c) => `A ${c}-foot ladder leans against a wall. The bottom of the ladder is ${a} feet from the base of the wall. How high up the wall does the ladder reach?` },
     { id: 'ladderL', find: 'c', r: [10, 30], u: 'feet', t: (a, b, c) => `A ladder reaches ${b} feet up a wall. The bottom of the ladder is ${a} feet from the wall. How long is the ladder?` },
-    { id: 'tv', find: 'c', r: [20, 80], u: 'inches', t: (a, b, c) => `A TV screen is ${Math.max(a, b)} inches wide and ${Math.min(a, b)} inches tall. TVs are measured by their diagonal. What size is this TV?` },
+    { id: 'tv', find: 'c', wide: true, r: [20, 80], u: 'inches', t: (a, b, c) => `A TV screen is ${Math.max(a, b)} inches wide and ${Math.min(a, b)} inches tall. TVs are measured by their diagonal. What size is this TV?` },
     { id: 'tvH', find: 'b', r: [20, 80], u: 'inches', t: (a, b, c) => `A ${c}-inch TV (measured on the diagonal) is ${a} inches wide. How tall is the screen?` },
     { id: 'park', find: 'c', r: [50, 300], u: 'meters', t: (a, b, c, n) => `${n} usually walks ${a} meters east and then ${b} meters north along the sidewalks of a rectangular park. How long is the shortcut straight across the park?` },
     { id: 'kite', find: 'b', r: [30, 150], u: 'feet', t: (a, b, c, n) => `${n} is flying a kite on a ${c}-foot string. The kite is directly above a spot ${a} feet away from ${n}. How high is the kite? (Ignore ${n}’s height.)` },
-    { id: 'ramp', find: 'c', r: [5, 30], u: 'feet', t: (a, b, c) => `A wheelchair ramp rises ${Math.min(a, b)} feet over a horizontal distance of ${Math.max(a, b)} feet. How long is the ramp’s surface?` },
+    { id: 'ramp', find: 'c', wide: true, r: [5, 30], u: 'feet', t: (a, b, c) => `A wheelchair ramp rises ${Math.min(a, b)} feet over a horizontal distance of ${Math.max(a, b)} feet. How long is the ramp’s surface?` },
     { id: 'wire', find: 'c', r: [10, 65], u: 'feet', t: (a, b, c) => `A support wire runs from the top of a ${b}-foot pole to a stake in the ground ${a} feet from the base of the pole. How long is the wire?` },
-    { id: 'plane', find: 'c', r: [20, 300], u: 'miles', t: (a, b, c) => `A plane flies ${a} miles north and then ${b} miles east. How far is the plane from where it started?` },
+    { id: 'plane', find: 'c', r: [20, 300], u: 'miles', t: (a, b, c) => `A plane flies ${b} miles north and then ${a} miles east. How far is the plane from where it started?` },
     { id: 'boat', find: 'b', r: [10, 100], u: 'miles', t: (a, b, c) => `A boat is ${c} miles from the harbor. It is ${a} miles due east of a buoy that is directly north of the harbor. How far is the buoy from the harbor?` },
-    { id: 'hike', find: 'c', r: [5, 40], u: 'miles', t: (a, b, c, n) => `${n} hikes ${a} miles south and then ${b} miles west. What is the straight-line distance back to the starting point?` },
+    { id: 'hike', find: 'c', r: [5, 40], u: 'miles', t: (a, b, c, n) => `${n} hikes ${b} miles south and then ${a} miles west. What is the straight-line distance back to the starting point?` },
     { id: 'shadow', find: 'c', r: [10, 65], u: 'feet', t: (a, b, c) => `A tree is ${b} feet tall and casts a shadow ${a} feet long. What is the distance from the top of the tree to the tip of its shadow?` },
-    { id: 'zip', find: 'c', r: [20, 120], u: 'feet', t: (a, b, c) => `A zip line starts on a platform ${Math.min(a, b)} feet high and ends on the ground ${Math.max(a, b)} feet away (measured horizontally). How long is the zip line cable?` },
-    { id: 'field', find: 'c', r: [50, 150], u: 'yards', t: (a, b, c, n) => `A rectangular field is ${Math.max(a, b)} yards long and ${Math.min(a, b)} yards wide. ${n} runs diagonally from one corner to the opposite corner. How far does ${n} run?` },
+    { id: 'zip', find: 'c', wide: true, r: [20, 120], u: 'feet', t: (a, b, c) => `A zip line starts on a platform ${Math.min(a, b)} feet high and ends on the ground ${Math.max(a, b)} feet away (measured horizontally). How long is the zip line cable?` },
+    { id: 'field', find: 'c', wide: true, r: [50, 150], u: 'yards', t: (a, b, c, n) => `A rectangular field is ${Math.max(a, b)} yards long and ${Math.min(a, b)} yards wide. ${n} runs diagonally from one corner to the opposite corner. How far does ${n} run?` },
     { id: 'phone', find: 'b', r: [5, 17], u: 'inches', t: (a, b, c) => `A tablet screen has a ${c}-inch diagonal and is ${a} inches wide. How tall is the screen?` },
-    { id: 'pool', find: 'c', r: [20, 65], u: 'meters', t: (a, b, c, n) => `${n} swims diagonally across a rectangular pool that is ${Math.max(a, b)} meters long and ${Math.min(a, b)} meters wide. How far does ${n} swim?` },
+    { id: 'pool', find: 'c', wide: true, r: [20, 65], u: 'meters', t: (a, b, c, n) => `${n} swims diagonally across a rectangular pool that is ${Math.max(a, b)} meters long and ${Math.min(a, b)} meters wide. How far does ${n} swim?` },
     { id: 'brace', find: 'c', r: [5, 20], u: 'feet', t: (a, b, c) => `A bookshelf is ${b} feet tall and ${a} feet wide. A diagonal brace is attached across the back from corner to corner. How long is the brace?` },
   ];
+  const SHORT = { feet: 'ft', inches: 'in.', meters: 'm', miles: 'mi', yards: 'yd' };
   const NAMES = ['Maya', 'Ben', 'Ava', 'Jayden', 'Sofia', 'Mateo', 'Zoe', 'Eli', 'Priya', 'Marcus', 'Chloe', 'Andre', 'Nora', 'Caleb', 'Aisha', 'Kai', 'Ruby', 'Diego'];
 
   function wordProb() {
@@ -346,9 +357,11 @@ window.WU = window.WU || {};
     const n = pick(NAMES);
     if (tpl.id === 'diamond') {
       const s = pick([[90, 'baseball'], [60, 'softball']]);
+      const round = 'Round to the nearest tenth.';
       return finish({
         text: `A ${s[1]} diamond is a square with ${s[0]}-foot sides. How far does the catcher throw the ball from home plate to second base?`,
-        prompt: 'Round to the nearest tenth.', diagram: null,
+        prompt: join(DRAW, round), dgPrompt: round,
+        diagram: tri(s[0], s[0], s[0] + ' ft', s[0] + ' ft', X),
         answer: `≈ ${approx(s[0] * Math.SQRT2)} feet`, alts: [`${s[0]}${WU.rad(2)} ft`],
         work: `${sup2(s[0])} + ${sup2(s[0])} = ${sup2(X)}`,
         key: `P|word|diamond|${s[0]}`, tkey: 'P|word|diamond',
@@ -374,11 +387,16 @@ window.WU = window.WU || {};
         }
       }
     }
+    if (tpl.wide && a < b) [a, b] = [b, a]; // horizontal leg = the longer one named in the text
     const ansVal = tpl.find === 'c' ? c : b;
     const text = tpl.t(a, b, c, n);
+    const u = SHORT[tpl.u];
+    const diagram = tpl.find === 'c' ? tri(a, b, `${a} ${u}`, `${b} ${u}`, X) : tri(a, b, `${a} ${u}`, X, `${c} ${u}`);
     const work = tpl.find === 'c' ? `${sup2(a)} + ${sup2(b)} = ${sup2(X)}` : `${sup2(a)} + ${sup2(X)} = ${sup2(c)}`;
+    const round = exact ? '' : 'Round to the nearest tenth.';
     return finish({
-      text, prompt: exact ? 'Draw and label a diagram, then solve.' : 'Draw and label a diagram. Round to the nearest tenth.', diagram: null,
+      text, prompt: join(exact ? 'Draw and label a diagram, then solve.' : DRAW, round),
+      dgPrompt: round, diagram,
       answer: exact ? `${ansVal} ${tpl.u}` : `≈ ${approx(ansVal)} ${tpl.u}`, work,
       key: `P|word|${tpl.id}|${a},${Math.round(b * 10)},${Math.round(c * 10)}`, tkey: `P|word|${tpl.id}`,
     }, 'word', 'Word Problem');

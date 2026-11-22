@@ -80,10 +80,14 @@
             <legend>Problem types</legend>
             <div id="pyth-types" class="checks"></div>
           </fieldset>
-          <label class="switch">
-            <input type="checkbox" id="pyth-diagrams" checked>
-            <span>Show labeled diagrams <small>(turn off for an extra challenge — students sketch their own)</small></span>
-          </label>
+          <fieldset>
+            <legend>Triangle diagrams <small>(you can change this after building, too)</small></legend>
+            <div class="radios">
+              <label><input type="radio" name="pyth-dg" value="all" checked> Show on every problem</label>
+              <label><input type="radio" name="pyth-dg" value="some"> Show on every other problem</label>
+              <label><input type="radio" name="pyth-dg" value="none"> None — students draw &amp; label their own</label>
+            </div>
+          </fieldset>
         </section>
 
         <section class="card">
@@ -170,7 +174,7 @@
     </main>
 
     <footer class="site-footer">
-      <p>Tips: in presentation mode use ← → to move between slides, <kbd>A</kbd> to show answers, <kbd>T</kbd> to start/pause the timer, <kbd>F</kbd> for full screen, <kbd>Esc</kbd> to exit.</p>
+      <p>Tips: in presentation mode use ← → to move between slides, <kbd>A</kbd> to show answers, <kbd>D</kbd> to reveal diagrams as a hint, <kbd>T</kbd> to start/pause the timer, <kbd>F</kbd> for full screen, <kbd>Esc</kbd> to exit.</p>
     </footer>
   </div>
 
@@ -185,6 +189,7 @@
       <span id="pr-count"></span>
       <button type="button" id="pr-prev" title="Previous (←)">←</button>
       <button type="button" id="pr-next" title="Next (→)">→</button>
+      <button type="button" id="pr-dg" title="Show every diagram as a hint (D)">Diagrams</button>
       <button type="button" id="pr-ans" title="Show answers (A)">Answers</button>
       <button type="button" id="pr-full" title="Full screen (F)">⛶</button>
       <button type="button" id="pr-exit" title="Exit (Esc)">✕</button>

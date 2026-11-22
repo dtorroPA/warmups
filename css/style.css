@@ -121,7 +121,8 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px s
 .pv-tag { font-size: .78rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
 .pv-tag.expr { background: var(--expr-soft); color: var(--expr); }
 .pv-tag.pyth { background: var(--pyth-soft); color: var(--pyth); }
-.pv-head .btn { margin-left: auto; }
+.pv-head .pv-tag { margin-right: auto; }
+.dg-btn.on { background: var(--pyth-soft); border-color: #9fd3c7; color: var(--pyth); }
 .pv-body { font-size: 1.02rem; }
 .pv-body .diagram { width: 230px; }
 .hide-answers .p-ans { display: none; }
@@ -178,6 +179,9 @@ sup { font-size: .7em; line-height: 0; }
 .pr-controls button { font: 600 15px var(--ui); border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 6px 12px; cursor: pointer; min-height: 36px; }
 .pr-controls button.on { background: var(--ans); color: #fff; border-color: var(--ans); }
 #pr-count { font-weight: 600; color: var(--muted); margin-right: 6px; }
+.v-hint { display: none; }
+#presenter.show-dgs .v-main { display: none; }
+#presenter.show-dgs .v-hint { display: block; }
 
 /* ---------- print ---------- */
 #print-area { display: none; }

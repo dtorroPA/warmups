@@ -53,7 +53,7 @@
       exprMode: ($('input[name="expr-mode"]:checked') || {}).value || 'mix',
       pythCount: clampInt($('#pyth-count').value, 0, 20),
       pythTypes: $$('input[name="pyth-type"]:checked').map((i) => i.value),
-      diagrams: $('#pyth-diagrams').checked,
+      dgMode: ($('input[name="pyth-dg"]:checked') || {}).value || 'all',
       order: ($('input[name="order"]:checked') || {}).value || 'expr-first',
       layout: $('#present-layout').value,
       timer: clampInt($('#timer-min').value, 0, 60),
@@ -74,7 +74,8 @@
     if (s.pythTypes) $$('input[name="pyth-type"]').forEach((i) => { i.checked = s.pythTypes.includes(i.value); });
     if (s.exprMode) { const r = $(`input[name="expr-mode"][value="${s.exprMode}"]`); if (r) r.checked = true; }
     if (s.order) { const r = $(`input[name="order"][value="${s.order}"]`); if (r) r.checked = true; }
-    if (s.diagrams != null) $('#pyth-diagrams').checked = s.diagrams;
+    const dgMode = s.dgMode || (s.diagrams === false ? 'none' : null);
+    if (dgMode) { const r = $(`input[name="pyth-dg"][value="${dgMode}"]`); if (r) r.checked = true; }
     if (s.layout) $('#present-layout').value = s.layout;
     if (s.timer != null) $('#timer-min').value = s.timer;
     if (s.space) $('#print-space').value = s.space;
@@ -106,7 +107,7 @@
   function genFromSpec(spec, opts) {
     return spec.topic === 'expr'
       ? WU.Expressions.generate(spec.level, opts.exprMode)
-      : WU.Pythagorean.generate(spec.type, { diagrams: opts.diagrams });
+      : WU.Pythagorean.generate(spec.type);
   }
 
   // Generate one problem avoiding repeats (history + this set) and, when possible, repeated templates.
@@ -126,7 +127,7 @@
     }
     const p = pickP || oldest || genFromSpec(spec, opts);
     p.spec = spec;
-    p.opts = { exprMode: opts.exprMode, diagrams: opts.diagrams };
+    p.opts = { exprMode: opts.exprMode };
     setKeys.add(p.key); setT.add(p.tkey);
     return p;
   }
@@ -146,15 +147,33 @@
       .map((level) => ({ topic: 'expr', level }));
     const pythSpecs = spread(s.pythCount, s.pythTypes).sort((a, b) => typeOrder.indexOf(a) - typeOrder.indexOf(b))
       .map((type) => ({ topic: 'pyth', type }));
-    const opts = { exprMode: s.exprMode, diagrams: s.diagrams };
+    const opts = { exprMode: s.exprMode };
     const ex = exprSpecs.map((sp) => genUnique(sp, opts, used, keys, ts));
     const py = pythSpecs.map((sp) => genUnique(sp, opts, used, keys, ts));
     let problems;
     if (s.order === 'pyth-first') problems = py.concat(ex);
     else if (s.order === 'shuffle') problems = WU.shuffle(ex.concat(py));
     else problems = ex.concat(py);
+    applyDiagramMode(problems, s.dgMode);
     return problems;
   }
+
+  // Diagrams on/off for Pythagorean problems. 'some' alternates on, off, on, ...
+  // Changing this never changes the numbers in a problem — only how it is shown.
+  function applyDiagramMode(problems, mode) {
+    let n = 0;
+    problems.forEach((p) => {
+      if (p.topic !== 'pyth' || !p.diagram) return;
+      p.showDg = mode === 'all' ? true : mode === 'none' ? false : n % 2 === 0;
+      n++;
+    });
+  }
+  // Which version of a problem to show (older saved sets have only one version)
+  function variant(p) {
+    if (p.topic !== 'pyth' || p.dgText == null) return { text: p.text, prompt: p.prompt, diagram: p.diagram };
+    return p.showDg ? { text: p.dgText, prompt: p.dgPrompt, diagram: p.diagram } : { text: p.text, prompt: p.prompt, diagram: null };
+  }
+  const canToggleDg = (p) => p.topic === 'pyth' && p.diagram && p.dgText != null;
 
   function onGenerate(e) {
     if (e) e.preventDefault();
@@ -180,10 +199,11 @@
     if (p.work) h += `<div class="ans-work">${p.work}</div>`;
     return h + '</div>';
   }
-  function problemInner(p, withAnswer) {
-    return `<div class="p-text">${p.text}</div>` +
-      (p.prompt ? `<div class="p-prompt">${p.prompt}</div>` : '') +
-      (p.diagram ? WU.renderDiagram(p.diagram) : '') +
+  function problemInner(p, withAnswer, forceDg) {
+    const v = forceDg ? { text: p.dgText, prompt: p.dgPrompt, diagram: p.diagram } : variant(p);
+    return `<div class="p-text">${v.text}</div>` +
+      (v.prompt ? `<div class="p-prompt">${v.prompt}</div>` : '') +
+      (v.diagram ? WU.renderDiagram(v.diagram) : '') +
       (withAnswer ? answerHTML(p) : '');
   }
 
@@ -203,6 +223,7 @@
         <div class="pv-head">
           <span class="pv-num">${i + 1}</span>
           <span class="pv-tag ${p.topic}">${p.label}</span>
+          ${canToggleDg(p) ? `<button type="button" class="btn tiny dg-btn${p.showDg ? ' on' : ''}" data-dg="${i}" aria-pressed="${!!p.showDg}" title="Show or hide the triangle diagram for this problem">△ Diagram ${p.showDg ? 'on' : 'off'}</button>` : ''}
           <button type="button" class="btn tiny" data-swap="${i}" title="Replace this problem with a new one">↻ Swap</button>
         </div>
         <div class="pv-body">${problemInner(p, true)}</div>
@@ -215,9 +236,25 @@
     const keys = new Set(current.problems.map((q) => q.key));
     const ts = new Set(current.problems.map((q, j) => (j === i ? null : q.tkey)));
     const np = genUnique(p.spec, p.opts, used, keys, ts);
+    if (np.topic === 'pyth') np.showDg = p.diagram ? !!p.showDg : variantModeDefault();
     current.problems[i] = np;
     current.saved = false;
     renderPreview();
+  }
+  const variantModeDefault = () => readSettings().dgMode !== 'none';
+
+  // Diagram changes don't change which problems are in the set, so update the saved copy in place.
+  function persistDiagramChange() {
+    renderPreview();
+    if (!current.saved || !current.id) return;
+    const sets = store.get(K_SETS, []);
+    const e = sets.find((x) => x.id === current.id);
+    if (e) { e.problems = current.problems; store.set(K_SETS, sets); }
+  }
+  function toggleDg(i) {
+    const p = current.problems[i];
+    p.showDg = !p.showDg;
+    persistDiagramChange();
   }
 
   // ---------------------------------------------------------------------------
@@ -270,7 +307,11 @@
       const cols = n <= 1 ? 1 : n <= 4 ? 2 : n <= 9 ? 3 : 4;
       const rows = Math.ceil(n / cols);
       return `<div class="slide" style="--cols:${cols};--rows:${rows}">` + ids.map((i) =>
-        `<div class="cell"><div class="cell-num">${i + 1}</div><div class="cell-body">${problemInner(probs[i], true)}</div></div>`).join('') + '</div>';
+        `<div class="cell"><div class="cell-num">${i + 1}</div><div class="cell-body">` +
+        (canToggleDg(probs[i]) && !probs[i].showDg
+          ? `<div class="v-main">${problemInner(probs[i], true)}</div><div class="v-hint">${problemInner(probs[i], true, true)}</div>`
+          : problemInner(probs[i], true)) +
+        '</div></div>').join('') + '</div>';
     }).join('');
     const minutes = clampInt($('#timer-min').value, 0, 60);
     stopTimer();
@@ -278,7 +319,10 @@
     renderTimer();
     const el = $('#presenter');
     el.hidden = false;
-    el.classList.remove('show-answers');
+    el.classList.remove('show-answers', 'show-dgs');
+    $('#pr-ans').classList.remove('on');
+    $('#pr-dg').classList.remove('on');
+    $('#pr-dg').hidden = !probs.some((p) => canToggleDg(p) && !p.showDg);
     document.body.classList.add('presenting');
     showSlide(0);
     requestFull();
@@ -310,6 +354,12 @@
     pr.answers = !pr.answers;
     $('#presenter').classList.toggle('show-answers', pr.answers);
     $('#pr-ans').classList.toggle('on', pr.answers);
+    fitActive();
+  }
+  function toggleDgHint() {
+    if ($('#pr-dg').hidden) return;
+    const on = $('#presenter').classList.toggle('show-dgs');
+    $('#pr-dg').classList.toggle('on', on);
     fitActive();
   }
   function exitPresent() {
@@ -360,7 +410,7 @@
         <div class="ph-title">${escapeHTML(current.title)}${current.date ? `<span class="ph-date">${dateText(current.date)}</span>` : ''}</div>
         <div class="ph-name">Name <span class="blank"></span> Period <span class="blank short"></span></div>
       </div>`;
-    const items = problems.map((p, i) => `<li class="pp${p.diagram ? ' has-dg' : ''}">
+    const items = problems.map((p, i) => `<li class="pp${variant(p).diagram ? ' has-dg' : ''}">
         <span class="pp-num">${i + 1}.</span>
         <div class="pp-body">${problemInner(p, false)}<div class="pp-space" style="height:${compact ? SPACE_EM[space] * 0.6 : SPACE_EM[space]}em"></div></div>
       </li>`).join('');
@@ -381,7 +431,7 @@
     }
     if ($('#print-key').checked) {
       html += `<div class="sheet key"><div class="ph"><div class="ph-title">${escapeHTML(current.title)} — Answer Key${current.date ? `<span class="ph-date">${dateText(current.date)}</span>` : ''}</div></div>
-        <ol class="key-list">${current.problems.map((p) => `<li><div class="key-q">${p.text}${p.prompt ? ' <i>' + p.prompt + '</i>' : ''}</div>${answerHTML(p)}</li>`).join('')}</ol></div>`;
+        <ol class="key-list">${current.problems.map((p) => `<li><div class="key-q">${variant(p).text}${variant(p).prompt ? ' <i>' + variant(p).prompt + '</i>' : ''}</div>${answerHTML(p)}</li>`).join('')}</ol></div>`;
     }
     area.innerHTML = html;
     // Half sheets: shrink text, then work space, until each copy fits on half a page
@@ -438,6 +488,8 @@
     $('#problem-list').addEventListener('click', (e) => {
       const b = e.target.closest('[data-swap]');
       if (b) swap(+b.dataset.swap);
+      const d = e.target.closest('[data-dg]');
+      if (d) toggleDg(+d.dataset.dg);
     });
     $('#preview-answers').addEventListener('change', () => {
       $('#problem-list').classList.toggle('hide-answers', !$('#preview-answers').checked);
@@ -445,6 +497,11 @@
     });
     ['#present-layout', '#timer-min', '#print-space', '#print-copies', '#print-key'].forEach((s) => $(s).addEventListener('change', saveSettings));
     $('#regen-all').addEventListener('click', () => onGenerate());
+    $$('input[name="pyth-dg"]').forEach((r) => r.addEventListener('change', () => {
+      if (!current) return;
+      applyDiagramMode(current.problems, r.value);
+      persistDiagramChange();
+    }));
     $('#present').addEventListener('click', present);
     $('#print').addEventListener('click', doPrint);
     $('#load-recent').addEventListener('click', loadRecent);
@@ -458,6 +515,7 @@
     $('#pr-prev').addEventListener('click', () => showSlide(pr.idx - 1));
     $('#pr-next').addEventListener('click', () => showSlide(pr.idx + 1));
     $('#pr-ans').addEventListener('click', toggleAnswers);
+    $('#pr-dg').addEventListener('click', toggleDgHint);
     $('#pr-full').addEventListener('click', toggleFull);
     $('#pr-exit').addEventListener('click', exitPresent);
     $('#pr-timer').addEventListener('click', toggleTimer);
@@ -469,6 +527,7 @@
       else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); showSlide(pr.idx - 1); }
       else if (k === 'a' || k === 'A') toggleAnswers();
       else if (k === 't' || k === 'T') toggleTimer();
+      else if (k === 'd' || k === 'D') toggleDgHint();
       else if (k === 'f' || k === 'F') toggleFull();
       else if (k === 'Escape') exitPresent();
     });
