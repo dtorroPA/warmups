@@ -47,15 +47,22 @@
         <section class="card topic" id="card-expr">
           <div class="topic-head">
             <h2>Writing Expressions</h2>
-            <div class="stepper" data-for="expr-count">
-              <button type="button" class="step" data-delta="-1" aria-label="Fewer expression problems">−</button>
-              <input type="number" id="expr-count" min="0" max="20" value="3" aria-label="Number of expression problems">
-              <button type="button" class="step" data-delta="1" aria-label="More expression problems">+</button>
+            <div class="topic-tools">
+              <div class="mover">
+                <button type="button" class="step mv-btn" data-move="-1" aria-label="Move Writing Expressions up">▲</button>
+                <button type="button" class="step mv-btn" data-move="1" aria-label="Move Writing Expressions down">▼</button>
+              </div>
+              <div class="stepper" data-for="expr-count">
+                <button type="button" class="step" data-delta="-1" aria-label="Fewer expression problems">−</button>
+                <input type="number" id="expr-count" min="0" max="20" value="3" aria-label="Number of expression problems">
+                <button type="button" class="step" data-delta="1" aria-label="More expression problems">+</button>
+              </div>
             </div>
           </div>
+          <p class="off-hint">Set the count above 0 to include writing expressions problems.</p>
           <fieldset>
             <legend>Difficulty <small>(problems are spread across the levels you check)</small></legend>
-            <div id="expr-levels" class="checks"></div>
+            <div id="expr-types" class="checks"></div>
           </fieldset>
           <fieldset>
             <legend>Wording <small>(levels 1–3)</small></legend>
@@ -70,12 +77,19 @@
         <section class="card topic" id="card-pyth">
           <div class="topic-head">
             <h2>Pythagorean Theorem</h2>
-            <div class="stepper" data-for="pyth-count">
-              <button type="button" class="step" data-delta="-1" aria-label="Fewer Pythagorean problems">−</button>
-              <input type="number" id="pyth-count" min="0" max="20" value="2" aria-label="Number of Pythagorean problems">
-              <button type="button" class="step" data-delta="1" aria-label="More Pythagorean problems">+</button>
+            <div class="topic-tools">
+              <div class="mover">
+                <button type="button" class="step mv-btn" data-move="-1" aria-label="Move Pythagorean Theorem up">▲</button>
+                <button type="button" class="step mv-btn" data-move="1" aria-label="Move Pythagorean Theorem down">▼</button>
+              </div>
+              <div class="stepper" data-for="pyth-count">
+                <button type="button" class="step" data-delta="-1" aria-label="Fewer Pythagorean problems">−</button>
+                <input type="number" id="pyth-count" min="0" max="20" value="2" aria-label="Number of Pythagorean problems">
+                <button type="button" class="step" data-delta="1" aria-label="More Pythagorean problems">+</button>
+              </div>
             </div>
           </div>
+          <p class="off-hint">Set the count above 0 to include Pythagorean problems.</p>
           <fieldset>
             <legend>Problem types</legend>
             <div id="pyth-types" class="checks"></div>
@@ -90,12 +104,59 @@
           </fieldset>
         </section>
 
-        <section class="card">
+        <section class="card topic" id="card-fact">
+          <div class="topic-head">
+            <h2>Factoring</h2>
+            <div class="topic-tools">
+              <div class="mover">
+                <button type="button" class="step mv-btn" data-move="-1" aria-label="Move Factoring up">▲</button>
+                <button type="button" class="step mv-btn" data-move="1" aria-label="Move Factoring down">▼</button>
+              </div>
+              <div class="stepper" data-for="fact-count">
+                <button type="button" class="step" data-delta="-1" aria-label="Fewer factoring problems">−</button>
+                <input type="number" id="fact-count" min="0" max="20" value="0" aria-label="Number of factoring problems">
+                <button type="button" class="step" data-delta="1" aria-label="More factoring problems">+</button>
+              </div>
+            </div>
+          </div>
+          <p class="off-hint">Set the count above 0 to include factoring problems.</p>
+          <fieldset>
+            <legend>Problem types <small>(problems are spread across the types you check)</small></legend>
+            <div id="fact-types" class="checks"></div>
+          </fieldset>
+          <label class="switch">
+            <input type="checkbox" id="fact-gcf" checked>
+            <span>Sometimes include a GCF to factor out first <small>(trinomials, squares, cubes, grouping)</small></span>
+          </label>
+        </section>
+
+        <section class="card topic" id="card-rad">
+          <div class="topic-head">
+            <h2>Simplifying Radicals</h2>
+            <div class="topic-tools">
+              <div class="mover">
+                <button type="button" class="step mv-btn" data-move="-1" aria-label="Move Simplifying Radicals up">▲</button>
+                <button type="button" class="step mv-btn" data-move="1" aria-label="Move Simplifying Radicals down">▼</button>
+              </div>
+              <div class="stepper" data-for="rad-count">
+                <button type="button" class="step" data-delta="-1" aria-label="Fewer radical problems">−</button>
+                <input type="number" id="rad-count" min="0" max="20" value="0" aria-label="Number of radical problems">
+                <button type="button" class="step" data-delta="1" aria-label="More radical problems">+</button>
+              </div>
+            </div>
+          </div>
+          <p class="off-hint">Set the count above 0 to include simplifying radicals problems.</p>
+          <fieldset>
+            <legend>Problem types <small>(problems are spread across the types you check)</small></legend>
+            <div id="rad-types" class="checks"></div>
+          </fieldset>
+        </section>
+
+        <section class="card" id="card-order">
           <h2>Order</h2>
           <div class="radios">
-            <label><input type="radio" name="order" value="expr-first" checked> Expressions first</label>
-            <label><input type="radio" name="order" value="pyth-first"> Pythagorean first</label>
-            <label><input type="radio" name="order" value="shuffle"> Shuffle together</label>
+            <label><input type="radio" name="order" value="grouped" checked> Grouped by topic, in the order of the cards above (use ▲▼ to rearrange)</label>
+            <label><input type="radio" name="order" value="shuffle"> Shuffle everything together</label>
           </div>
           <button type="submit" class="btn primary big" id="generate">Build warm-up</button>
           <p class="hint" id="gen-msg" role="status"></p>
@@ -202,6 +263,8 @@
   <script src="js/util.js"></script>
   <script src="js/expressions.js"></script>
   <script src="js/pythagorean.js"></script>
+  <script src="js/factoring.js"></script>
+  <script src="js/radicals.js"></script>
   <script src="js/diagram.js"></script>
   <script src="js/app.js"></script>
 </body>

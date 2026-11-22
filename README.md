@@ -12,6 +12,7 @@ It's plain HTML, CSS, and JavaScript with no build step and no server.
 
 1. Pick a title (Do Now, Warm Up, Bell Ringer, or your own) and a date.
 2. Set the number of problems for each topic, and check the difficulty levels or problem types you want.
+   A topic set to 0 collapses out of the way. Use the ▲▼ buttons to change the order the topics appear in.
 3. Click **Build warm-up**. The preview shows every problem with its answer. Click **↻ Swap** on any problem to replace it.
 4. Click **▶ Present** for the slideshow, or **🖨 Print** for a handout.
 
@@ -62,12 +63,47 @@ Answers list accepted equivalent forms, for example `2w + 3` or `3 + 2w`.
 
 The answer key shows the equation and the solution steps.
 
+### Factoring
+All problems say **Factor completely**, and the answer key gives the fully factored form.
+Some answers also show an intermediate step, such as the grouping step or the GCF pulled out first.
+
+| Type | Example |
+|---|---|
+| Greatest common factor | 6x³ − 9x² + 12x → 3x(2x² − 3x + 4), including two-variable terms |
+| Trinomials with a = 1 | x² + 7x + 12 → (x + 3)(x + 4), including perfect squares |
+| Difference of two squares | 9x² − 25 → (3x + 5)(3x − 5); x⁴ − 16 → (x² + 4)(x + 2)(x − 2) |
+| Trinomials with a ≠ 1 | 6x² + 7x − 3 → (2x + 3)(3x − 1) |
+| Sum & difference of cubes | 8x³ − 27 → (2x − 3)(4x² + 6x + 9) |
+| Grouping (degree 3 or higher) | x³ + 3x² − 4x − 12 → (x + 3)(x + 2)(x − 2), and degree 4–5 polynomials |
+| Quadratic form | x⁴ − 13x² + 36 → (x + 2)(x − 2)(x + 3)(x − 3), and some x⁶ + bx³ + c |
+
+The **Sometimes include a GCF to factor out first** option puts a common factor in front of some trinomial, square, cube, and grouping problems, for example 2x² − 50 or 3x³ + 24.
+Every problem is built by multiplying its factors together, so the answer always matches.
+
+### Simplifying Radicals
+| Type | Example |
+|---|---|
+| Square roots of numbers | √72 → 6√2 |
+| With a coefficient | 3√48 → 12√3; (4√18) ÷ 6 → 2√2 |
+| Monomials with variables | √(50x³y⁴) → 5xy²√(2x) (variables assumed positive) |
+| Cube roots | ∛54 → 3∛2; ∛(16x⁵) → 2x∛(2x²) |
+| Rationalize the denominator | 6/√3 → 2√3; √(5/8) → √10/4; 3/∛2 → 3∛4/2 |
+| Rationalize with a conjugate | 4/(3 − √5) → 3 + √5; (5 + √3)/(5 − √3); 4/(√2 + √7) |
+| Imaginary numbers | √−48 → 4i√3; √−6 · √−10 → −2√15; 3/√−10; i²³ → −i |
+| Add, subtract & multiply | √50 + √18 → 8√2; 2√3 · 5√6 → 30√2; (2 + √3)² |
+
 ## Avoiding repeats
 Problems are generated from templates, contexts, and numbers chosen at random, which gives thousands of distinct problems per level.
 Each warm-up you present or print is saved in **Saved warm-ups**, so you can reload it later (for absent students, say).
 Its problems are also added to a no-repeat history, and the builder skips anything used in the last year.
 Within one warm-up, it also tries to avoid using the same template twice.
 History is stored in your browser on that computer. **Clear history** resets it.
+
+### Order
+- **Grouped by topic:** topics appear in the order of the cards on the setup page, and within a topic, problems run from the first checked type to the last.
+- **Shuffle everything together:** mixes all the problems in random order.
+
+When you ask for fewer problems than the number of types you checked, the types used are picked at random.
 
 ## Files
 ```
@@ -76,6 +112,8 @@ css/style.css        styles for the screen, the slideshow, and printing
 js/util.js           random helpers, number words, fraction and radical rendering
 js/expressions.js    Writing Expressions problem bank (levels 1–4)
 js/pythagorean.js    Pythagorean Theorem problem bank (6 types)
+js/factoring.js      Factoring problem bank (7 types)
+js/radicals.js       Simplifying Radicals problem bank (8 types)
 js/diagram.js        right-triangle and rectangle diagrams
 js/app.js            settings, preview, slideshow, printing, history
 ```

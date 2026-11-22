@@ -34,27 +34,74 @@
   // ---------------------------------------------------------------------------
   // Settings UI
   // ---------------------------------------------------------------------------
+  // Every topic is one entry here; the setup card for it lives in index.html (#card-<id>).
+  const TOPICS = [
+    { id: 'expr', name: 'Writing Expressions', items: () => WU.Expressions.LEVELS, def: [1, 2], what: 'difficulty level',
+      gen: (v, o) => WU.Expressions.generate(v, o.exprMode) },
+    { id: 'pyth', name: 'Pythagorean Theorem', items: () => WU.Pythagorean.TYPES, def: ['whole'], what: 'problem type',
+      gen: (v) => WU.Pythagorean.generate(v) },
+    { id: 'fact', name: 'Factoring', items: () => WU.Factoring.TYPES, def: ['gcf', 'tri1'], what: 'problem type',
+      gen: (v, o) => WU.Factoring.generate(v, { gcf: o.factGcf }) },
+    { id: 'rad', name: 'Radicals', items: () => WU.Radicals.TYPES, def: ['numeric', 'coef'], what: 'problem type',
+      gen: (v) => WU.Radicals.generate(v) },
+  ];
+  const topicById = (id) => TOPICS.find((t) => t.id === id);
+  const itemValue = (t, str) => (t.items().find((it) => String(it.id) === str) || {}).id;
+
   function buildChecks() {
-    $('#expr-levels').innerHTML = WU.Expressions.LEVELS.map((l) =>
-      `<label class="check"><input type="checkbox" name="expr-level" value="${l.id}"${l.id <= 2 ? ' checked' : ''}>
-        <span><b>${l.name}</b><small>${l.desc}</small></span></label>`).join('');
-    $('#pyth-types').innerHTML = WU.Pythagorean.TYPES.map((t, i) =>
-      `<label class="check"><input type="checkbox" name="pyth-type" value="${t.id}"${i === 0 ? ' checked' : ''}>
-        <span><b>${t.name}</b><small>${t.desc}</small></span></label>`).join('');
+    TOPICS.forEach((t) => {
+      $(`#${t.id}-types`).innerHTML = t.items().map((it) =>
+        `<label class="check"><input type="checkbox" name="${t.id}-type" value="${it.id}"${t.def.includes(it.id) ? ' checked' : ''}>
+          <span><b>${it.name}</b><small>${it.desc}</small></span></label>`).join('');
+    });
+  }
+
+  // Topic cards can be moved up/down; grouped warm-ups follow this order.
+  function topicOrder() {
+    return $$('.topic').map((c) => c.id.replace('card-', ''));
+  }
+  function setTopicOrder(order) {
+    const cards = order.map((id) => $('#card-' + id)).filter(Boolean);
+    if (cards.length !== TOPICS.length) return;
+    const anchor = $('#card-order');
+    cards.forEach((c) => anchor.parentNode.insertBefore(c, anchor));
+    updateTopicCards();
+  }
+  function moveTopic(id, dir) {
+    const order = topicOrder();
+    const i = order.indexOf(id), j = i + dir;
+    if (j < 0 || j >= order.length) return;
+    [order[i], order[j]] = [order[j], order[i]];
+    setTopicOrder(order);
+    saveSettings();
+    $(`#card-${id} [data-move="${dir}"]`).focus();
+  }
+  // Collapse a topic's options while its count is 0
+  function updateTopicCards() {
+    const order = topicOrder();
+    TOPICS.forEach((t) => {
+      const card = $('#card-' + t.id);
+      card.classList.toggle('off', clampInt($(`#${t.id}-count`).value, 0, 20) === 0);
+      $('[data-move="-1"]', card).disabled = order[0] === t.id;
+      $('[data-move="1"]', card).disabled = order[order.length - 1] === t.id;
+    });
   }
 
   function readSettings() {
-    const titleSel = $('#title-select').value;
+    const counts = {}, picks = {};
+    TOPICS.forEach((t) => {
+      counts[t.id] = clampInt($(`#${t.id}-count`).value, 0, 20);
+      picks[t.id] = $$(`input[name="${t.id}-type"]:checked`).map((i) => itemValue(t, i.value));
+    });
     return {
-      titleSel,
+      titleSel: $('#title-select').value,
       customTitle: $('#custom-title').value,
-      exprCount: clampInt($('#expr-count').value, 0, 20),
-      exprLevels: $$('input[name="expr-level"]:checked').map((i) => +i.value),
+      counts, picks,
+      topicOrder: topicOrder(),
       exprMode: ($('input[name="expr-mode"]:checked') || {}).value || 'mix',
-      pythCount: clampInt($('#pyth-count').value, 0, 20),
-      pythTypes: $$('input[name="pyth-type"]:checked').map((i) => i.value),
       dgMode: ($('input[name="pyth-dg"]:checked') || {}).value || 'all',
-      order: ($('input[name="order"]:checked') || {}).value || 'expr-first',
+      factGcf: $('#fact-gcf').checked,
+      order: ($('input[name="order"]:checked') || {}).value || 'grouped',
       layout: $('#present-layout').value,
       timer: clampInt($('#timer-min').value, 0, 60),
       space: $('#print-space').value,
@@ -64,24 +111,39 @@
     };
   }
   function applySettings(s) {
-    if (!s) return;
+    if (!s) { updateTopicCards(); return; }
+    // settings saved by the first version of the site
+    const counts = s.counts || { expr: s.exprCount, pyth: s.pythCount };
+    const picks = s.picks || { expr: s.exprLevels, pyth: s.pythTypes };
+    let order = s.order;
+    if (order === 'expr-first' || order === 'pyth-first') {
+      if (order === 'pyth-first' && !s.topicOrder) s.topicOrder = ['pyth', 'expr', 'fact', 'rad'];
+      order = 'grouped';
+    }
     if (s.titleSel) $('#title-select').value = s.titleSel;
     if (s.customTitle) $('#custom-title').value = s.customTitle;
     $('#custom-title-wrap').hidden = $('#title-select').value !== '__custom';
-    if (s.exprCount != null) $('#expr-count').value = s.exprCount;
-    if (s.pythCount != null) $('#pyth-count').value = s.pythCount;
-    if (s.exprLevels) $$('input[name="expr-level"]').forEach((i) => { i.checked = s.exprLevels.includes(+i.value); });
-    if (s.pythTypes) $$('input[name="pyth-type"]').forEach((i) => { i.checked = s.pythTypes.includes(i.value); });
+    TOPICS.forEach((t) => {
+      if (counts[t.id] != null) $(`#${t.id}-count`).value = counts[t.id];
+      if (picks[t.id]) $$(`input[name="${t.id}-type"]`).forEach((i) => { i.checked = picks[t.id].map(String).includes(i.value); });
+    });
     if (s.exprMode) { const r = $(`input[name="expr-mode"][value="${s.exprMode}"]`); if (r) r.checked = true; }
-    if (s.order) { const r = $(`input[name="order"][value="${s.order}"]`); if (r) r.checked = true; }
+    if (order) { const r = $(`input[name="order"][value="${order}"]`); if (r) r.checked = true; }
     const dgMode = s.dgMode || (s.diagrams === false ? 'none' : null);
     if (dgMode) { const r = $(`input[name="pyth-dg"][value="${dgMode}"]`); if (r) r.checked = true; }
+    if (s.factGcf != null) $('#fact-gcf').checked = s.factGcf;
     if (s.layout) $('#present-layout').value = s.layout;
     if (s.timer != null) $('#timer-min').value = s.timer;
     if (s.space) $('#print-space').value = s.space;
     if (s.copies) $('#print-copies').value = s.copies;
     if (s.key != null) $('#print-key').checked = s.key;
     if (s.previewAnswers != null) $('#preview-answers').checked = s.previewAnswers;
+    if (s.topicOrder) {
+      const known = s.topicOrder.filter((id) => topicById(id));
+      TOPICS.forEach((t) => { if (!known.includes(t.id)) known.push(t.id); });
+      setTopicOrder(known);
+    }
+    updateTopicCards();
   }
   const saveSettings = () => store.set(K_SETTINGS, readSettings());
   function clampInt(v, a, b) { const n = parseInt(v, 10); return isNaN(n) ? a : Math.max(a, Math.min(b, n)); }
@@ -105,9 +167,8 @@
   let current = null; // { title, date, problems: [] }
 
   function genFromSpec(spec, opts) {
-    return spec.topic === 'expr'
-      ? WU.Expressions.generate(spec.level, opts.exprMode)
-      : WU.Pythagorean.generate(spec.type);
+    const v = spec.v != null ? spec.v : spec.level != null ? spec.level : spec.type; // older saved sets
+    return topicById(spec.topic).gen(v, opts);
   }
 
   // Generate one problem avoiding repeats (history + this set) and, when possible, repeated templates.
@@ -127,33 +188,32 @@
     }
     const p = pickP || oldest || genFromSpec(spec, opts);
     p.spec = spec;
-    p.opts = { exprMode: opts.exprMode };
+    p.opts = { ...opts };
     setKeys.add(p.key); setT.add(p.tkey);
     return p;
   }
 
   function spread(n, items) {
+    // every checked type equally often; leftovers go to randomly chosen types
     const out = [];
-    for (let i = 0; i < n; i++) out.push(items[i % items.length]);
-    return out; // already in ascending difficulty order once sorted by index below
+    for (let i = 0; i < Math.floor(n / items.length); i++) out.push(...items);
+    out.push(...WU.shuffle(items).slice(0, n % items.length));
+    return out; // sorted into difficulty order by the caller
   }
 
   function buildSet(s) {
     const used = usedMap();
     const keys = new Set(), ts = new Set();
-    const levelOrder = WU.Expressions.LEVELS.map((l) => l.id);
-    const typeOrder = WU.Pythagorean.TYPES.map((t) => t.id);
-    const exprSpecs = spread(s.exprCount, s.exprLevels).sort((a, b) => levelOrder.indexOf(a) - levelOrder.indexOf(b))
-      .map((level) => ({ topic: 'expr', level }));
-    const pythSpecs = spread(s.pythCount, s.pythTypes).sort((a, b) => typeOrder.indexOf(a) - typeOrder.indexOf(b))
-      .map((type) => ({ topic: 'pyth', type }));
-    const opts = { exprMode: s.exprMode };
-    const ex = exprSpecs.map((sp) => genUnique(sp, opts, used, keys, ts));
-    const py = pythSpecs.map((sp) => genUnique(sp, opts, used, keys, ts));
-    let problems;
-    if (s.order === 'pyth-first') problems = py.concat(ex);
-    else if (s.order === 'shuffle') problems = WU.shuffle(ex.concat(py));
-    else problems = ex.concat(py);
+    const opts = { exprMode: s.exprMode, factGcf: s.factGcf };
+    // within a topic, problems go from the first checked type/level to the last
+    const groups = s.topicOrder.map((id) => {
+      const t = topicById(id);
+      const order = t.items().map((it) => it.id);
+      return spread(s.counts[id], s.picks[id])
+        .sort((a, b) => order.indexOf(a) - order.indexOf(b))
+        .map((v) => genUnique({ topic: id, v }, opts, used, keys, ts));
+    });
+    const problems = s.order === 'shuffle' ? WU.shuffle(groups.flat()) : groups.flat();
     applyDiagramMode(problems, s.dgMode);
     return problems;
   }
@@ -180,9 +240,10 @@
     const s = readSettings();
     const msg = $('#gen-msg');
     msg.textContent = '';
-    if (s.exprCount > 0 && !s.exprLevels.length) { msg.textContent = 'Pick at least one Expressions difficulty level (or set its count to 0).'; return; }
-    if (s.pythCount > 0 && !s.pythTypes.length) { msg.textContent = 'Pick at least one Pythagorean problem type (or set its count to 0).'; return; }
-    if (s.exprCount + s.pythCount === 0) { msg.textContent = 'Set at least one problem count above 0.'; return; }
+    for (const t of TOPICS) {
+      if (s.counts[t.id] > 0 && !s.picks[t.id].length) { msg.textContent = `Pick at least one ${t.name} ${t.what} (or set its count to 0).`; return; }
+    }
+    if (TOPICS.every((t) => s.counts[t.id] === 0)) { msg.textContent = 'Set at least one problem count above 0.'; return; }
     saveSettings();
     current = { title: titleText(), date: $('#date').value, problems: buildSet(s), saved: false };
     renderPreview();
@@ -482,9 +543,14 @@
       const input = $('#' + st.dataset.for);
       $$('.step', st).forEach((b) => b.addEventListener('click', () => {
         input.value = clampInt(+input.value + +b.dataset.delta, 0, 20);
+        updateTopicCards();
         saveSettings();
       }));
+      input.addEventListener('input', updateTopicCards);
     });
+    $$('.topic [data-move]').forEach((b) => b.addEventListener('click', () => {
+      moveTopic(b.closest('.topic').id.replace('card-', ''), +b.dataset.move);
+    }));
     $('#problem-list').addEventListener('click', (e) => {
       const b = e.target.closest('[data-swap]');
       if (b) swap(+b.dataset.swap);

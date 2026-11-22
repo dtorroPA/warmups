@@ -12,6 +12,10 @@
   --expr-soft: #f1e9fb;
   --pyth: #0f7d6b;
   --pyth-soft: #e3f4f0;
+  --fact: #b4580f;
+  --fact-soft: #fcefe3;
+  --rad: #1f6fb2;
+  --rad-soft: #e4f0fb;
   --ans: #b4231b;
   --shape: #eaf0fd;
   --radius: 12px;
@@ -46,6 +50,17 @@ kbd { font: 600 .8em var(--ui); border: 1px solid var(--line); border-bottom-wid
 .topic { border-top: 4px solid var(--accent); }
 #card-expr { border-top-color: var(--expr); }
 #card-pyth { border-top-color: var(--pyth); }
+#card-fact { border-top-color: var(--fact); }
+#card-rad { border-top-color: var(--rad); }
+.topic-tools { display: flex; gap: 8px; align-items: center; }
+.mover { display: inline-flex; flex-direction: column; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.mover .mv-btn { border: 0; background: var(--bg); width: 30px; height: 21px; font-size: .62rem; cursor: pointer; color: var(--muted); padding: 0; }
+.mover .mv-btn:hover:not(:disabled) { background: var(--accent-soft); color: var(--ink); }
+.mover .mv-btn:disabled { opacity: .3; cursor: default; }
+.off-hint { display: none; color: var(--muted); font-size: .88rem; margin: 4px 0 0; }
+.topic.off .off-hint { display: block; }
+.topic.off > fieldset, .topic.off > .switch { display: none; }
+.topic.off { padding-bottom: 12px; }
 .topic-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px; }
 .topic-head h2 { margin: 0; }
 
@@ -75,13 +90,16 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px s
 .check:has(input:checked) { background: var(--accent-soft); border-color: #b8c8f2; }
 #card-expr .check:has(input:checked) { background: var(--expr-soft); border-color: #d6c1f0; }
 #card-pyth .check:has(input:checked) { background: var(--pyth-soft); border-color: #b2dfd5; }
+#card-fact .check:has(input:checked) { background: var(--fact-soft); border-color: #f1cda9; }
+#card-rad .check:has(input:checked) { background: var(--rad-soft); border-color: #b3d3f0; }
 .check input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
 .check span { display: flex; flex-direction: column; }
 .check b { font-weight: 600; font-size: .95rem; }
 .check small { font-size: .84rem; }
 
 .radios { display: flex; flex-wrap: wrap; gap: 6px 16px; }
-.radios label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.radios label { display: inline-flex; gap: 6px; align-items: flex-start; cursor: pointer; }
+.radios label input { margin-top: 4px; }
 .switch { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; margin-top: 8px; }
 .switch input { width: 18px; height: 18px; margin-top: 2px; flex: none; }
 .switch.small { font-size: .9rem; align-items: center; margin: 0; }
@@ -121,6 +139,8 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px s
 .pv-tag { font-size: .78rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
 .pv-tag.expr { background: var(--expr-soft); color: var(--expr); }
 .pv-tag.pyth { background: var(--pyth-soft); color: var(--pyth); }
+.pv-tag.fact { background: var(--fact-soft); color: var(--fact); }
+.pv-tag.rad { background: var(--rad-soft); color: var(--rad); }
 .pv-head .pv-tag { margin-right: auto; }
 .dg-btn.on { background: var(--pyth-soft); border-color: #9fd3c7; color: var(--pyth); }
 .pv-body { font-size: 1.02rem; }
@@ -130,13 +150,16 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px s
 /* ---------- math ---------- */
 .mv { font-family: var(--math); font-style: italic; padding: 0 .04em; }
 .frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; font-size: .92em; margin: 0 .12em; line-height: 1.1; }
-.frac .fn { border-bottom: .07em solid currentColor; padding: 0 .2em .04em; }
-.frac .fd { padding: .04em .2em 0; }
+.frac .fn { border-bottom: .07em solid currentColor; padding: 0 .2em .06em; }
+.frac .fd { padding: .2em .2em 0; }
 .rad { white-space: nowrap; }
 .rad .rs { font-family: var(--math); }
 .rad .ri { border-top: .075em solid currentColor; padding: .06em .1em 0 .08em; margin-left: -.04em; }
 sup { font-size: .7em; line-height: 0; }
 .phrase { font-style: italic; }
+.mx-line { font-size: 1.18em; margin: .3em 0 .1em .4em; }
+.rad .rx { font-size: .55em; vertical-align: .95em; margin: 0 -.5em 0 .1em; position: relative; }
+.radios small { color: var(--muted); }
 
 /* ---------- problem parts ---------- */
 .p-text { margin: 0; }
@@ -223,3 +246,6 @@ sup { font-size: .7em; line-height: 0; }
 .key-q { font-size: 10pt; color: #333; }
 .key .p-ans { border-left-color: #000; padding: 2px 8px; }
 .key .ans-label { color: #000; }
+/* taller radical sign over a fraction, e.g. √(5/8) */
+.rad:has(> .ri > .frac) > .rs { font-size: 1.75em; line-height: 1; vertical-align: -.2em; }
+.rad:has(> .ri > .frac) > .ri { padding-top: .12em; }
