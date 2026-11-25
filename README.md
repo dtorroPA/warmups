@@ -12,7 +12,9 @@ It's plain HTML, CSS, and JavaScript with no build step and no server.
 
 1. Pick a title (Do Now, Warm Up, Bell Ringer, or your own) and a date.
 2. Set the number of problems for each topic, and check the difficulty levels or problem types you want.
-   A topic set to 0 collapses out of the way. Use the ▲▼ buttons to change the order the topics appear in.
+   - Click a topic's arrow (▾) or its name to collapse the card to a one-line summary, such as "3 problems · 2 of 4 levels checked". The site remembers which cards are collapsed.
+   - A topic set to 0 also shrinks out of the way.
+   - Use the ▲▼ buttons to change the order the topics appear in.
 3. Click **Build warm-up**. The preview shows every problem with its answer.
    - **↻ Swap** replaces one problem with a new one of the same type.
    - **✕ Remove** takes one problem out. The rest stay the same and renumber, and **Undo** puts it back.

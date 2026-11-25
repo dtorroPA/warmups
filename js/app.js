@@ -81,10 +81,36 @@
     const order = topicOrder();
     TOPICS.forEach((t) => {
       const card = $('#card-' + t.id);
-      card.classList.toggle('off', clampInt($(`#${t.id}-count`).value, 0, 20) === 0);
+      const n = clampInt($(`#${t.id}-count`).value, 0, 20);
+      card.classList.toggle('off', n === 0);
       $('[data-move="-1"]', card).disabled = order[0] === t.id;
       $('[data-move="1"]', card).disabled = order[order.length - 1] === t.id;
+      // one-line summary shown while the card is collapsed
+      const picked = $$(`input[name="${t.id}-type"]:checked`, card).length;
+      const total = t.items().length;
+      const word = t.id === 'expr' ? 'level' : 'type';
+      $('.topic-summary', card).textContent = n === 0 ? 'Off (0 problems)'
+        : `${n} problem${n === 1 ? '' : 's'} · ${picked} of ${total} ${word}s checked`;
     });
+  }
+
+  // Collapsible topic cards: the arrow button lives inside each card's <h2>.
+  function addCollapseButtons() {
+    TOPICS.forEach((t) => {
+      const card = $('#card-' + t.id);
+      const h2 = $('.topic-head h2', card);
+      const title = h2.textContent;
+      h2.innerHTML = `<button type="button" class="collapse-btn" aria-expanded="true" aria-controls="card-${t.id}">
+        <span class="chev" aria-hidden="true">▾</span><span>${title}</span></button>`;
+      $('.topic-head', card).insertAdjacentHTML('afterend', '<p class="topic-summary"></p>');
+      $('.collapse-btn', card).addEventListener('click', () => { setCollapsed(t.id, !card.classList.contains('collapsed')); saveSettings(); });
+    });
+  }
+  function setCollapsed(id, on) {
+    const card = $('#card-' + id);
+    card.classList.toggle('collapsed', on);
+    $('.collapse-btn', card).setAttribute('aria-expanded', String(!on));
+    $('.collapse-btn', card).title = on ? 'Show options' : 'Hide options';
   }
 
   function readSettings() {
@@ -98,6 +124,7 @@
       customTitle: $('#custom-title').value,
       counts, picks,
       topicOrder: topicOrder(),
+      collapsed: TOPICS.filter((t) => $('#card-' + t.id).classList.contains('collapsed')).map((t) => t.id),
       exprMode: ($('input[name="expr-mode"]:checked') || {}).value || 'mix',
       dgMode: ($('input[name="pyth-dg"]:checked') || {}).value || 'all',
       factGcf: $('#fact-gcf').checked,
@@ -138,6 +165,7 @@
     if (s.copies) $('#print-copies').value = s.copies;
     if (s.key != null) $('#print-key').checked = s.key;
     if (s.previewAnswers != null) $('#preview-answers').checked = s.previewAnswers;
+    if (s.collapsed) TOPICS.forEach((t) => setCollapsed(t.id, s.collapsed.includes(t.id)));
     if (s.topicOrder) {
       const known = s.topicOrder.filter((id) => topicById(id));
       TOPICS.forEach((t) => { if (!known.includes(t.id)) known.push(t.id); });
@@ -554,13 +582,14 @@
   // ---------------------------------------------------------------------------
   function init() {
     buildChecks();
+    addCollapseButtons();
     $('#date').value = localISO();
     applySettings(store.get(K_SETTINGS, null));
     renderRecent();
     updateHistoryCount();
 
     $('#settings').addEventListener('submit', onGenerate);
-    $('#settings').addEventListener('change', saveSettings);
+    $('#settings').addEventListener('change', () => { updateTopicCards(); saveSettings(); });
     $('#title-select').addEventListener('change', () => {
       $('#custom-title-wrap').hidden = $('#title-select').value !== '__custom';
       if (current) { current.title = titleText(); renderPreview(); }

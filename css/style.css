@@ -61,6 +61,14 @@ kbd { font: 600 .8em var(--ui); border: 1px solid var(--line); border-bottom-wid
 .topic.off .off-hint { display: block; }
 .topic.off > fieldset, .topic.off > .switch { display: none; }
 .topic.off { padding-bottom: 12px; }
+.collapse-btn { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 4px 6px 4px 0; margin: -4px 0; font: inherit; color: inherit; cursor: pointer; text-align: left; border-radius: 6px; }
+.collapse-btn:hover .chev { background: var(--accent-soft); color: var(--ink); }
+.chev { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 6px; font-size: 1.05rem; color: var(--ink); background: var(--bg); transition: transform .15s; flex: none; }
+.topic.collapsed .chev { transform: rotate(-90deg); }
+.topic-summary { display: none; color: var(--muted); font-size: .88rem; margin: 4px 0 0 34px; }
+.topic.collapsed .topic-summary { display: block; }
+.topic.collapsed > fieldset, .topic.collapsed > .switch, .topic.collapsed > .off-hint { display: none !important; }
+.topic.collapsed { padding-bottom: 12px; }
 .topic-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 6px; }
 .topic-head h2 { margin: 0; }
 
