@@ -103,7 +103,8 @@
       h2.innerHTML = `<button type="button" class="collapse-btn" aria-expanded="true" aria-controls="card-${t.id}">
         <span class="chev" aria-hidden="true">▾</span><span>${title}</span></button>`;
       $('.topic-head', card).insertAdjacentHTML('afterend', '<p class="topic-summary"></p>');
-      $('.collapse-btn', card).addEventListener('click', () => { setCollapsed(t.id, !card.classList.contains('collapsed')); saveSettings(); });
+      $('.collapse-btn', card).addEventListener('click', () => setCollapsed(t.id, !card.classList.contains('collapsed')));
+      setCollapsed(t.id, true); // every topic card starts collapsed when the page opens
     });
   }
   function setCollapsed(id, on) {
@@ -124,7 +125,6 @@
       customTitle: $('#custom-title').value,
       counts, picks,
       topicOrder: topicOrder(),
-      collapsed: TOPICS.filter((t) => $('#card-' + t.id).classList.contains('collapsed')).map((t) => t.id),
       exprMode: ($('input[name="expr-mode"]:checked') || {}).value || 'mix',
       dgMode: ($('input[name="pyth-dg"]:checked') || {}).value || 'all',
       factGcf: $('#fact-gcf').checked,
@@ -165,7 +165,6 @@
     if (s.copies) $('#print-copies').value = s.copies;
     if (s.key != null) $('#print-key').checked = s.key;
     if (s.previewAnswers != null) $('#preview-answers').checked = s.previewAnswers;
-    if (s.collapsed) TOPICS.forEach((t) => setCollapsed(t.id, s.collapsed.includes(t.id)));
     if (s.topicOrder) {
       const known = s.topicOrder.filter((id) => topicById(id));
       TOPICS.forEach((t) => { if (!known.includes(t.id)) known.push(t.id); });
