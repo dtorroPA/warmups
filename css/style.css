@@ -142,6 +142,11 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px s
 .pv-tag.fact { background: var(--fact-soft); color: var(--fact); }
 .pv-tag.rad { background: var(--rad-soft); color: var(--rad); }
 .pv-head .pv-tag { margin-right: auto; }
+.rm-btn { color: var(--muted); }
+.rm-btn:hover { color: var(--ans); border-color: #e7b3ae; background: #fdf1f0; }
+.undo-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff7e0; border: 1px solid #f1d58a; border-radius: 10px; padding: 6px 8px 6px 14px; margin-bottom: 10px; font-size: .92rem; }
+.empty.small { padding: 18px; margin: 0 0 14px; font-size: .95rem; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
 .dg-btn.on { background: var(--pyth-soft); border-color: #9fd3c7; color: var(--pyth); }
 .pv-body { font-size: 1.02rem; }
 .pv-body .diagram { width: 230px; }

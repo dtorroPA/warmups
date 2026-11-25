@@ -246,6 +246,7 @@
     if (TOPICS.every((t) => s.counts[t.id] === 0)) { msg.textContent = 'Set at least one problem count above 0.'; return; }
     saveSettings();
     current = { title: titleText(), date: $('#date').value, problems: buildSet(s), saved: false };
+    hideUndo();
     renderPreview();
     if (window.matchMedia('(max-width: 980px)').matches) $('#preview').scrollIntoView({ behavior: 'smooth' });
   }
@@ -286,9 +287,13 @@
           <span class="pv-tag ${p.topic}">${p.label}</span>
           ${canToggleDg(p) ? `<button type="button" class="btn tiny dg-btn${p.showDg ? ' on' : ''}" data-dg="${i}" aria-pressed="${!!p.showDg}" title="Show or hide the triangle diagram for this problem">△ Diagram ${p.showDg ? 'on' : 'off'}</button>` : ''}
           <button type="button" class="btn tiny" data-swap="${i}" title="Replace this problem with a new one">↻ Swap</button>
+          <button type="button" class="btn tiny rm-btn" data-remove="${i}" title="Remove this problem" aria-label="Remove problem ${i + 1}">✕ Remove</button>
         </div>
         <div class="pv-body">${problemInner(p, true)}</div>
       </li>`).join('');
+    const none = current.problems.length === 0;
+    $('#preview-none').hidden = !none;
+    $('#present').disabled = $('#print').disabled = none;
   }
 
   function swap(i) {
@@ -304,7 +309,29 @@
   }
   const variantModeDefault = () => readSettings().dgMode !== 'none';
 
-  // Diagram changes don't change which problems are in the set, so update the saved copy in place.
+  // Remove one problem; the others keep their content and simply renumber.
+  let lastRemoved = null; // { p, i } for Undo
+  function removeProblem(i) {
+    lastRemoved = { p: current.problems[i], i };
+    current.problems.splice(i, 1);
+    persistSetChange();
+    showUndo(`Removed problem ${i + 1}.`);
+  }
+  function undoRemove() {
+    if (!lastRemoved) return;
+    current.problems.splice(Math.min(lastRemoved.i, current.problems.length), 0, lastRemoved.p);
+    lastRemoved = null;
+    persistSetChange();
+    $('#undo-bar').hidden = true;
+  }
+  function showUndo(msg) {
+    $('#undo-msg').textContent = msg;
+    $('#undo-bar').hidden = false;
+  }
+  function hideUndo() { lastRemoved = null; const b = $('#undo-bar'); if (b) b.hidden = true; }
+
+  // Diagram changes and removals don't add new problems, so a saved copy is updated in place.
+  const persistSetChange = () => persistDiagramChange();
   function persistDiagramChange() {
     renderPreview();
     if (!current.saved || !current.id) return;
@@ -343,6 +370,7 @@
     const s = store.get(K_SETS, []).find((x) => x.id === id);
     if (!s) return;
     current = { title: s.title, date: s.date, problems: s.problems, saved: true, id: s.id };
+    hideUndo();
     renderPreview();
   }
   const escapeHTML = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -353,7 +381,7 @@
   const pr = { slides: [], idx: 0, answers: false, timerTotal: 0, timerLeft: 0, timerId: null, running: false };
 
   function present() {
-    if (!current) return;
+    if (!current || !current.problems.length) return;
     saveCurrent();
     const layout = $('#present-layout').value;
     const probs = current.problems;
@@ -478,7 +506,7 @@
     return header + `<ol class="pp-list">${items}</ol>`;
   }
   function doPrint() {
-    if (!current) return;
+    if (!current || !current.problems.length) return;
     saveCurrent();
     const space = $('#print-space').value;
     const copies = $('#print-copies').value === '2';
@@ -553,7 +581,9 @@
     }));
     $('#problem-list').addEventListener('click', (e) => {
       const b = e.target.closest('[data-swap]');
-      if (b) swap(+b.dataset.swap);
+      if (b) { hideUndo(); swap(+b.dataset.swap); }
+      const r = e.target.closest('[data-remove]');
+      if (r) removeProblem(+r.dataset.remove);
       const d = e.target.closest('[data-dg]');
       if (d) toggleDg(+d.dataset.dg);
     });
@@ -563,6 +593,7 @@
     });
     ['#present-layout', '#timer-min', '#print-space', '#print-copies', '#print-key'].forEach((s) => $(s).addEventListener('change', saveSettings));
     $('#regen-all').addEventListener('click', () => onGenerate());
+    $('#undo-btn').addEventListener('click', undoRemove);
     $$('input[name="pyth-dg"]').forEach((r) => r.addEventListener('change', () => {
       if (!current) return;
       applyDiagramMode(current.problems, r.value);

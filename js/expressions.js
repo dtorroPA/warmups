@@ -154,7 +154,7 @@ window.WU = window.WU || {};
     const V = v(ctx.v);
     const r = form.make(ctx, ctx.base, V);
     return {
-      text: `${ctx.subj} ${r.p}.`,
+      text: `${ctx.subj} ${r.p}`.replace(/\.?$/, "."), // no double period after "a.m."
       prompt: `Let ${V} represent ${ctx.def}. Write an expression for ${ctx.ask}.`,
       answer: r.ans, alts: r.alts,
       key: `E|${form.id}|c${ctxIdx}|${r.n.join(',')}`,
